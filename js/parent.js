@@ -606,7 +606,7 @@ function voicePick(item, box) {
   list.forEach((v) => box.append(chip(voiceLabel(v), cur === v.name, () => set(v.name))));
   box.append(chip('🔈 들어 보기', false, preview, 'ghost'));
   if (!list.length) {
-    box.append(h('p', { class: 'ps-help warn' }, '이 기기에서 한국어 목소리를 찾지 못했습니다. 기기 설정 → 텍스트 음성 변환에서 한국어 음성 데이터를 내려받아 주세요.'));
+    box.append(h('p', { class: 'ps-help warn' }, '이 기기에서 한국어 목소리를 찾지 못했습니다. 이대로는 음성이 나오지 않을 수 있습니다. 삼성 기기는 Galaxy Store에서 삼성 TTS 한국어 음성을 내려받고(다른 기기는 설정 → 텍스트 음성 변환 → 한국어 음성 데이터 설치), 앱을 완전히 닫았다 다시 열어 주세요. 아래 "음성 진단"으로 확인할 수 있습니다.'));
   } else if (cur && !list.some((v) => v.name === cur)) {
     box.append(h('p', { class: 'ps-help warn' }, '고른 목소리를 이 기기에서 찾을 수 없어 자동으로 고른 목소리를 쓰고 있습니다.'));
   }
