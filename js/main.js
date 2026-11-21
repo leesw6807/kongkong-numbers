@@ -104,7 +104,7 @@ function makeEmojiButton(item, extraClass = '') {
 /* ---------- 부모 설정 적용 ---------- */
 // 지금 동작과 연결된 설정만 적용한다. 나머지는 저장만 되어 있다가 각 단계에서 읽어 쓴다.
 function applySettings(s) {
-  configureAudio({ volume: s.volume, rate: s.voiceRate, numberStyle: s.numberStyle, voiceName: s.voiceName });
+  configureAudio({ volume: s.volume, rate: s.voiceRate, numberStyle: s.numberStyle, voiceName: s.voiceName, sfxStyle: s.sfxStyle });
   setReduceMotion(s.reduceMotion);
   document.documentElement.dataset.dim = s.dimScreen ? 'on' : 'off';
   renderGames(s.gamesEnabled);

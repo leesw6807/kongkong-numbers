@@ -16,6 +16,7 @@ const config = {
   rate: 'slow',                            // 'slow'(0.85) | 'normal'(1.0) — TTS에만 적용
   numberStyle: 'native',                   // 'native' | 'sino' | 'both'
   voiceName: '',                           // TTS 목소리 이름 ('' = 자동: 가장 자연스러운 목소리)
+  sfxStyle: 'glocken',                     // 효과음 소리 (SFX_STYLES 키)
 };
 const TTS_RATE = { slow: 0.85, normal: 1.0 };
 
@@ -34,6 +35,7 @@ export function configure(opts = {}) {
   if (opts.rate) config.rate = opts.rate;
   if (opts.numberStyle) config.numberStyle = opts.numberStyle;
   if (typeof opts.voiceName === 'string') config.voiceName = opts.voiceName;
+  if (opts.sfxStyle && SFX_STYLES[opts.sfxStyle]) config.sfxStyle = opts.sfxStyle;
   applyGains();
 }
 
@@ -67,14 +69,14 @@ function ensureCtx() {
   return ctx;
 }
 
-const SFX_BOOST = 2.4; // 벨 소리는 금방 줄어들어 크게 보낸다 (최대값은 리미터가 막는다)
-const SFX_TRIM = 0.8;  // 리미터 뒤 출력 (최대값을 1 아래로)
+const SFX_TRIM = 0.76; // 리미터 뒤 출력 (모든 소리 스타일의 최대값을 1 아래로)
 
 function applyGains() {
   if (!gains) return;
   const level = (k) => Math.min(Math.max(config.volume[k], 0), 100) / 100;
   gains.voice.gain.value = level('voice');
-  gains.sfx.gain.value = level('sfx') * SFX_BOOST;
+  // 소리는 금방 줄어들어 크게 보낸다(소리마다 boost). 최대값은 리미터 + SFX_TRIM이 막는다.
+  gains.sfx.gain.value = level('sfx') * (SFX_STYLES[config.sfxStyle] ?? SFX_STYLES.glocken).boost;
 }
 
 export function isUnlocked() {
@@ -441,26 +443,33 @@ export function sayPraise(options) {
 }
 
 /* ---------- 효과음 ---------- */
-// 합성음: 글로켄(벨) 소리 (설계서 §7, 부정 효과음 없음)
-// - 사용자가 dev/sfx.html에서 피아노·부드러운 피아노·벨·오르골 중 골랐다.
-// - 음 하나 = 사인파 부분음 4개. 주파수 비가 정수배가 아니라(1 : 2.76 : 5.4 : 8.93) 종소리가 난다.
-// - 2ms 만에 올라간 뒤 지수로 줄어들고, 높은 부분음일수록 빨리 사라진다.
-const BELL = { partials: [[1, 1], [2.76, 0.35], [5.4, 0.12], [8.93, 0.05]], tau: 0.6, attack: 0.002 };
-const BELL_SUM = BELL.partials.reduce((a, [, x]) => a + x, 0);
+// 합성음 (설계서 §7, 부정 효과음 없음). 부모 설정 "효과음 소리"로 고른다(기본 글로켄).
+// - 음 하나 = 사인파 부분음 여러 개의 합. [주파수 비, 세기].
+//   피아노·오르골은 정수배(맑은 음), 글로켄은 정수배가 아니어서(1 : 2.76 : 5.4 : 8.93) 종소리가 난다.
+// - attack 만에 올라간 뒤 지수로 줄어들고, 높은 부분음일수록 빨리 사라진다.
+// - boost: 소리마다 크기를 비슷하게 맞추는 값(측정으로 정함). 최대값은 리미터 + SFX_TRIM이 1 아래로 막는다.
+export const SFX_STYLES = {
+  glocken:   { partials: [[1, 1], [2.76, 0.35], [5.4, 0.12], [8.93, 0.05]], tau: 0.6,  attack: 0.002, boost: 2.4 },
+  piano:     { partials: [[1, 1], [2, 0.45], [3, 0.22], [4, 0.12], [5, 0.06]], tau: 0.42, attack: 0.004, boost: 3.1 },
+  softPiano: { partials: [[1, 1], [2, 0.3], [3, 0.1], [4, 0.04]],          tau: 0.5,  attack: 0.008, boost: 2.7 },
+  musicBox:  { partials: [[1, 1], [2, 0.18], [3.01, 0.08], [4.2, 0.05]],    tau: 0.55, attack: 0.003, boost: 2.8 },
+};
 
 // freq: 기본 음(Hz), at: 시작 시각, len: 음 길이(초), amp: 세기(0~1), endFreq: 끝 음(쭉 올라가는 소리)
 function bell(freq, at, len, amp = 1, endFreq = null) {
-  BELL.partials.forEach(([ratio, a], i) => {
+  const style = SFX_STYLES[config.sfxStyle] ?? SFX_STYLES.glocken;
+  const sum = style.partials.reduce((s, [, x]) => s + x, 0);
+  style.partials.forEach(([ratio, a], i) => {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq * ratio, at);
     if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq * ratio, at + len * 0.5);
-    const peak = (a / BELL_SUM) * amp;
-    const tau = (BELL.tau * len) / (1 + i * 0.9); // 높은 부분음일수록 빨리 줄어든다
+    const peak = (a / sum) * amp;
+    const tau = (style.tau * len) / (1 + i * 0.9); // 높은 부분음일수록 빨리 줄어든다
     g.gain.setValueAtTime(0, at);
-    g.gain.linearRampToValueAtTime(peak, at + BELL.attack);
-    g.gain.setTargetAtTime(0, at + BELL.attack, tau);
+    g.gain.linearRampToValueAtTime(peak, at + style.attack);
+    g.gain.setTargetAtTime(0, at + style.attack, tau);
     osc.connect(g).connect(gains.sfx);
     osc.start(at);
     osc.stop(at + len + 0.3);

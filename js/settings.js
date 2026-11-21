@@ -26,6 +26,7 @@ export const OPTIONS = {
   voiceRate: ['slow', 'normal'],
   grapesPerBunch: [5, 10, 15, 20],
   buddyMode: ['even', 'priority'],
+  sfxStyle: ['glocken', 'piano', 'softPiano', 'musicBox'],
 };
 
 function makeDefaults() {
@@ -45,6 +46,7 @@ function makeDefaults() {
     volume: { voice: 70, sfx: 60 },      // 배경음은 넣지 않는다 (설계서 §9)
     voiceRate: 'slow',
     voiceName: '',                       // TTS 목소리 ('' = 자동: 가장 자연스러운 목소리)
+    sfxStyle: 'glocken',                 // 효과음 소리 (설계서 §7)
     // 화면
     dimScreen: false,
     reduceMotion: false,
@@ -89,6 +91,7 @@ export function sanitize(raw) {
 
   for (const k of ['voice', 'sfx']) s.volume[k] = volume(r.volume?.[k], d.volume[k]);
   s.voiceRate = pick(r.voiceRate, OPTIONS.voiceRate, d.voiceRate);
+  s.sfxStyle = pick(r.sfxStyle, OPTIONS.sfxStyle, d.sfxStyle);
   // TTS 목소리 이름: 기기마다 목록이 달라 여기서는 형식만 본다 (없는 이름이면 audio.js가 자동 선택으로 돌아감)
   s.voiceName = typeof r.voiceName === 'string' && r.voiceName.length <= 120 ? r.voiceName : '';
 

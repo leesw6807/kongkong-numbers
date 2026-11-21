@@ -68,6 +68,10 @@ const SECTIONS = [
       { kind: 'range', path: 'volume.voice', label: '음성 음량', live: true, preview: () => audio.sayPraise() },
       { kind: 'range', path: 'volume.sfx', label: '효과음 음량', live: true, preview: () => audio.sfx('correct') },
       {
+        kind: 'sfxStyle', path: 'sfxStyle', label: '효과음 소리', live: true,
+        help: '누를 때(톡)·정답(띵동)·포도알과 스티커(쏙)·한 판 끝(짜잔) 소리를 모두 이 소리로 냅니다. 고르면 띵동을 들려줍니다. 아래 버튼으로 하나씩 들어 볼 수 있습니다.',
+      },
+      {
         kind: 'choice', path: 'voiceRate', label: '음성 속도', live: true,
         options: [['slow', '느리게'], ['normal', '보통']],
         help: '기계 음성(TTS)에만 적용됩니다. 녹음한 음성은 처음부터 천천히 녹음합니다.',
@@ -250,7 +254,7 @@ function badge(item) {
 function itemEl(item) {
   const control = h('div', { class: 'ps-control' });
   const builders = {
-    choice, games, range, hours, rewards, action, backup, rewardGive, newBoard, usageStatus, records, resetProgress: resetProgressItem, voicePick, buddy, voiceDiag,
+    choice, games, range, hours, rewards, action, backup, rewardGive, newBoard, usageStatus, records, resetProgress: resetProgressItem, voicePick, buddy, voiceDiag, sfxStyle,
   };
   builders[item.kind](item, control);
   return h('div', { class: 'ps-item' },
@@ -610,6 +614,21 @@ function voicePick(item, box) {
   } else if (cur && !list.some((v) => v.name === cur)) {
     box.append(h('p', { class: 'ps-help warn' }, '고른 목소리를 이 기기에서 찾을 수 없어 자동으로 고른 목소리를 쓰고 있습니다.'));
   }
+}
+
+// 효과음 소리 고르기 (audio.js SFX_STYLES, 설계서 §7)
+const SFX_STYLE_LABELS = [['glocken', '🔔 글로켄(벨)'], ['piano', '🎹 피아노'], ['softPiano', '🎹 부드러운 피아노'], ['musicBox', '🎶 오르골']];
+const SFX_SOUND_LABELS = [['tap', '톡'], ['correct', '띵동'], ['pop', '쏙'], ['cheer', '짜잔']];
+function sfxStyle(item, box) {
+  const cur = getSetting(item.path);
+  box.classList.add('column');
+  box.append(
+    h('div', { class: 'row' }, SFX_STYLE_LABELS.map(([v, label]) => chip(label, cur === v, () => {
+      if (getSetting(item.path) !== v && setSetting(item.path, v)) { saved(); renderPanel(); }
+      audio.sfx('correct');
+    }))),
+    h('div', { class: 'row' }, SFX_SOUND_LABELS.map(([k, label]) => chip(`🔈 ${label}`, false, () => audio.sfx(k), 'ghost'))),
+  );
 }
 
 // 음성 진단: 기기의 TTS 상태와 시험 말하기 결과 (부모 영역이라 글자 허용)
