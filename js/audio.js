@@ -67,12 +67,22 @@ export function isUnlocked() {
   return unlocked;
 }
 
+// resume()은 기기·상황에 따라 끝나지 않을 수 있다 → 최대 RESUME_WAIT_MS만 기다린다 (설계서 §7, 시작 화면 멈춤 방지)
+const RESUME_WAIT_MS = 800;
+function resumeCtx(c) {
+  if (c.state !== 'suspended') return Promise.resolve();
+  return Promise.race([
+    c.resume().catch(() => {}),
+    new Promise((r) => setTimeout(r, RESUME_WAIT_MS)),
+  ]);
+}
+
 // 반드시 사용자 탭 이벤트 안에서 호출해야 브라우저가 소리를 허용한다.
 export async function unlockAudio() {
   try {
     const c = ensureCtx();
     if (c) {
-      if (c.state === 'suspended') await c.resume();
+      await resumeCtx(c);
       const buffer = c.createBuffer(1, 1, 22050);
       const src = c.createBufferSource();
       src.buffer = buffer;
@@ -270,8 +280,9 @@ export async function say(keys, { interrupt = true, joiner = ' ' } = {}) {
   const bufs = await Promise.all(list.map(loadBuffer));
   if (myToken !== token) return;
 
-  if (ctx && bufs.every(Boolean)) {
-    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* 무시 */ } }
+  if (ctx && bufs.every(Boolean)) await resumeCtx(ctx);
+  // 오디오가 아직 멈춰 있으면(활성화 실패) mp3는 끝 신호가 오지 않으므로 TTS로 읽는다
+  if (ctx && ctx.state === 'running' && bufs.every(Boolean)) {
     for (let i = 0; i < bufs.length; i++) {
       if (myToken !== token) return;
       await playBuffer(bufs[i], gains.voice, myToken);
@@ -377,7 +388,8 @@ export async function sfx(name) {
   if (!SFX[key]) return console.warn(`[audio] 없는 효과음: ${name}`);
   const c = ensureCtx();
   if (!c) return;
-  if (c.state === 'suspended') { try { await c.resume(); } catch { return; } }
+  await resumeCtx(c);
+  if (c.state !== 'running') return; // 오디오가 막혀 있으면 효과음은 건너뛴다 (기다리다 멈추지 않게)
   const buf = await loadBuffer(key);
   if (buf) return playBuffer(buf, gains.sfx);
   SYNTH[key](c.currentTime + 0.01);
