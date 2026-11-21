@@ -280,10 +280,33 @@ function setupGate() {
 }
 
 /* ---------- service worker ---------- */
+// 새 버전 적용 (설계서 §11-1): 캐시 우선이라 새 service worker가 들어와도 열려 있는 화면은 예전 파일이다.
+// - 새 service worker가 화면을 넘겨받으면(controllerchange) 시작 화면일 때 바로 새로고침한다.
+// - 게임 등 다른 화면이면 놀이를 끊지 않고, 앱을 떠났다 돌아올 때 새로고침한다.
+// - 앱으로 돌아올 때마다 새 버전이 있는지 확인한다.
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+  const hadController = Boolean(navigator.serviceWorker.controller); // 첫 설치 때는 새로고침하지 않는다
+  let updateReady = false;
+  let reloading = false;
+  const reload = () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    if (currentScreen === 'start') reload();
+    else updateReady = true;
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((e) => {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if (updateReady) { reload(); return; }
+        reg.update().catch(() => {});
+      });
+    }).catch((e) => {
       console.warn('service worker 등록 실패', e);
     });
   });
