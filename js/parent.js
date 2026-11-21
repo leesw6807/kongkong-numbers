@@ -77,6 +77,10 @@ const SECTIONS = [
         kind: 'voicePick', path: 'voiceName', label: '목소리', live: true,
         help: '녹음한 음성이 없는 문장을 읽는 기계 목소리입니다. "자동"은 이 기기에서 가장 자연스러운 목소리를 고릅니다. "인터넷 필요" 목소리는 인터넷이 끊기면 기기 목소리로 바뀝니다.',
       },
+      {
+        kind: 'voiceDiag', label: '음성 진단', live: true, liveText: '문제 확인용',
+        help: '음성이 들리지 않을 때 원인을 찾는 곳입니다. 시험 1~3을 하나씩 눌러 소리가 나는지 듣고, 아래 결과를 그대로 알려 주세요. (기기 미디어 음량을 먼저 올려 주세요)',
+      },
     ],
   },
   {
@@ -246,7 +250,7 @@ function badge(item) {
 function itemEl(item) {
   const control = h('div', { class: 'ps-control' });
   const builders = {
-    choice, games, range, hours, rewards, action, backup, rewardGive, newBoard, usageStatus, records, resetProgress: resetProgressItem, voicePick, buddy,
+    choice, games, range, hours, rewards, action, backup, rewardGive, newBoard, usageStatus, records, resetProgress: resetProgressItem, voicePick, buddy, voiceDiag,
   };
   builders[item.kind](item, control);
   return h('div', { class: 'ps-item' },
@@ -606,6 +610,41 @@ function voicePick(item, box) {
   } else if (cur && !list.some((v) => v.name === cur)) {
     box.append(h('p', { class: 'ps-help warn' }, '고른 목소리를 이 기기에서 찾을 수 없어 자동으로 고른 목소리를 쓰고 있습니다.'));
   }
+}
+
+// 음성 진단: 기기의 TTS 상태와 시험 말하기 결과 (부모 영역이라 글자 허용)
+const diagResults = {};
+function voiceDiag(item, box) {
+  const info = audio.ttsInfo();
+  const tests = [
+    ['normal', '▶ 시험 1 (앱 방식)'],
+    ['noVoice', '▶ 시험 2 (목소리 지정 없이)'],
+    ['noCancel', '▶ 시험 3 (멈춤 없이 바로)'],
+  ];
+  const lines = [];
+  if (!info.supported) {
+    lines.push('이 브라우저는 음성 합성(speechSynthesis)을 지원하지 않습니다.');
+  } else {
+    lines.push(`브라우저: ${navigator.userAgent.match(/SamsungBrowser\/[\d.]+|Chrome\/[\d.]+|Firefox\/[\d.]+|Version\/[\d.]+ Safari/)?.[0] ?? '알 수 없음'} · 인터넷 ${info.online ? '연결됨' : '끊김'} · 오디오 ${info.audioState}`);
+    lines.push(`목소리 전체 ${info.total}개, 한국어 ${info.korean.length}개`);
+    info.korean.forEach((v) => lines.push(`  - ${v.name} (${v.lang}${v.local ? ', 기기' : ', 인터넷'}${v.isDefault ? ', 기본' : ''})`));
+    if (!info.korean.length && info.langs.length) lines.push(`  (있는 언어: ${info.langs.join(', ')})`);
+  }
+  box.classList.add('column');
+  box.append(
+    h('div', { class: 'row' }, tests.map(([mode, label]) => chip(label, false, async () => {
+      diagResults[mode] = '듣는 중…';
+      renderPanel();
+      diagResults[mode] = await audio.ttsTest(mode);
+      renderPanel();
+    }))),
+    h('pre', { class: 'diag-box' },
+      tests.map(([mode, label]) => `${label.slice(2)}: ${diagResults[mode] ?? '아직 안 함'}`).join('\n'),
+      '\n\n', lines.join('\n'),
+      '\n\n최근 말하기:\n',
+      audio.getTtsLog().map((e) => `${e.at.toTimeString().slice(0, 8)} ${e.result} · ${e.text} · ${e.voice}`).join('\n') || '(없음)'),
+    h('div', { class: 'row' }, chip('↻ 결과 새로 보기', false, () => renderPanel(), 'ghost')),
+  );
 }
 
 // 진행 초기화: 지금 상태를 보여 주고, 두 번 확인한 뒤 progress.resetProgress()

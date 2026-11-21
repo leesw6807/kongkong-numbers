@@ -1,6 +1,6 @@
 /* 숫자 친구 콩콩이 — service worker
    파일을 수정하면 CACHE_VERSION을 반드시 올린다. (CLAUDE.md 작업 방식) */
-const CACHE_VERSION = 25;
+const CACHE_VERSION = 26;
 const CACHE_NAME = `kongkong-v${CACHE_VERSION}`;
 
 // 오프라인 동작에 필요한 모든 파일 (상대경로)

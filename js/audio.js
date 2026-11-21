@@ -51,7 +51,15 @@ function ensureCtx() {
     voice: ctx.createGain(),
     sfx: ctx.createGain(),
   };
-  Object.values(gains).forEach((g) => g.connect(ctx.destination));
+  gains.voice.connect(ctx.destination);
+  // 효과음은 크게 낸 뒤 압축기로 찌그러짐(클리핑)을 막는다 — 태블릿 스피커에서 잘 들리게 (설계서 §7)
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -12;
+  comp.knee.value = 6;
+  comp.ratio.value = 12;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.1;
+  gains.sfx.connect(comp).connect(ctx.destination);
   applyGains();
   return ctx;
 }
@@ -229,8 +237,11 @@ function tts(rawText, myToken, forceVoice = null) {
       if (currentUtterance === u) currentUtterance = null;
       resolve();
     };
-    u.onend = finish;
+    const logged = logTts(text, v);
+    u.onstart = () => { logged.result = '시작됨'; };
+    u.onend = () => { logged.result = logged.result === '시작됨' ? '끝까지 말함' : '끝(시작 신호 없음)'; finish(); };
     u.onerror = (e) => {
+      logged.result = `오류: ${e?.error ?? '알 수 없음'}`;
       // 온라인 목소리가 실패하면(인터넷 끊김 등) 기기 목소리로 한 번 다시 읽는다
       const local = bestLocalVoice();
       if (!forceVoice && v && !v.localService && local && myToken === token && e?.error !== 'interrupted' && e?.error !== 'canceled') {
@@ -242,7 +253,10 @@ function tts(rawText, myToken, forceVoice = null) {
       finish();
     };
     // 일부 기기에서 onend가 오지 않는 경우 대비
-    const guard = setTimeout(finish, 3000 + text.length * 450);
+    const guard = setTimeout(() => {
+      if (logged.result === '요청함') logged.result = '응답 없음(시간 초과)';
+      finish();
+    }, 3000 + text.length * 450);
 
     currentUtterance = u;
     // Chrome: cancel 직후 바로 speak하면 무시되는 경우가 있어 잠깐 띄운다
@@ -250,6 +264,67 @@ function tts(rawText, myToken, forceVoice = null) {
       if (myToken !== token) return finish();
       synth.speak(u);
     }, 60);
+  });
+}
+
+/* ---------- 음성 진단 (부모 설정 → 소리 → 음성 진단) ----------
+   기기에서 TTS가 안 들릴 때 원인을 보려고, 최근 말하기 결과와 목소리 목록을 보여 준다. 저장하지 않는다. */
+const ttsLog = [];
+function logTts(text, voice) {
+  const entry = { at: new Date(), text: text.slice(0, 20), voice: voice?.name ?? '(지정 안 함)', result: '요청함' };
+  ttsLog.unshift(entry);
+  ttsLog.length = Math.min(ttsLog.length, 8);
+  return entry;
+}
+
+export function getTtsLog() {
+  return ttsLog.map((e) => ({ ...e }));
+}
+
+export function ttsInfo() {
+  const s = window.speechSynthesis;
+  if (!s) return { supported: false };
+  refreshVoices();
+  return {
+    supported: true,
+    online: isOnline(),
+    total: voices.length,
+    korean: voices.filter((v) => v.lang?.toLowerCase().startsWith('ko'))
+      .map((v) => ({ name: v.name, lang: v.lang, local: v.localService, isDefault: v.default })),
+    langs: [...new Set(voices.map((v) => v.lang))].slice(0, 12),
+    audioState: ctx?.state ?? '없음',
+  };
+}
+
+// 진단용 시험 말하기. mode:
+//   'normal'   — 앱과 같은 방법 (멈춘 뒤 0.06초 쉬고, 고른 목소리로)
+//   'noVoice'  — 목소리를 지정하지 않고 언어(ko-KR)만
+//   'noCancel' — 멈추기(cancel) 없이 바로, 목소리 지정 없이
+// 반환: 결과 문자열 (시작됨·끝까지 말함·오류 코드·응답 없음)
+export function ttsTest(mode, text = '하나, 둘, 셋. 잘했어!') {
+  const s = window.speechSynthesis;
+  if (!s) return Promise.resolve('이 브라우저는 음성 합성을 지원하지 않음');
+  return new Promise((resolve) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR';
+    u.volume = 1;
+    u.rate = TTS_RATE[config.rate] ?? 0.85;
+    const v = mode === 'normal' ? getKoreanVoice() : null;
+    if (v) u.voice = v;
+    const entry = logTts(`[시험 ${mode}] ${text}`, v);
+    let started = false;
+    const end = (r) => { entry.result = r; clearTimeout(t); resolve(r); };
+    u.onstart = () => { started = true; entry.result = '시작됨'; };
+    u.onend = () => end(started ? '끝까지 말함' : '끝(시작 신호 없음)');
+    u.onerror = (e) => end(`오류: ${e?.error ?? '알 수 없음'}`);
+    const t = setTimeout(() => end(started ? '시작했지만 끝 신호 없음' : '응답 없음(8초)'), 8000);
+    currentUtterance = u;
+    if (mode === 'noCancel') {
+      s.speak(u);
+    } else {
+      stop();
+      setTimeout(() => s.speak(u), 60);
+    }
   });
 }
 
@@ -361,7 +436,8 @@ export function sayPraise(options) {
 
 /* ---------- 효과음 ---------- */
 // 합성음: 사인파, 짧고 부드럽게 (부정 효과음 없음)
-function tone(freq, at, dur, peak = 0.22, endFreq = null) {
+// 크기: 처음 0.22는 태블릿 스피커에서 너무 작았다(음량 60%면 최대 출력의 약 13%) → 0.65, 겹침은 압축기가 받는다
+function tone(freq, at, dur, peak = 0.65, endFreq = null) {
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
   osc.type = 'sine';
@@ -376,9 +452,9 @@ function tone(freq, at, dur, peak = 0.22, endFreq = null) {
 }
 
 const SYNTH = {
-  sfx_tap: (t) => tone(660, t, 0.09, 0.18),
+  sfx_tap: (t) => tone(660, t, 0.09, 0.5),
   sfx_correct: (t) => { tone(784, t, 0.18); tone(1047, t + 0.14, 0.3); },
-  sfx_pop: (t) => tone(440, t, 0.16, 0.22, 880),
+  sfx_pop: (t) => tone(440, t, 0.16, 0.65, 880),
   sfx_cheer: (t) => { tone(523, t, 0.2); tone(659, t + 0.13, 0.2); tone(784, t + 0.26, 0.4); },
 };
 

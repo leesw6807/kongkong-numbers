@@ -1768,6 +1768,20 @@ button:focus-visible {
   gap: 14px;
 }
 
+/* 부모: 음성 진단 결과 */
+.diag-box {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* 부모: 메인 캐릭터 우선순위 */
 .buddy-modes {
   display: flex;
