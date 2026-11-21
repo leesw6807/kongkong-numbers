@@ -10,6 +10,7 @@ import { initGrapes, openGrapes, stopGrapes } from './grapes.js';
 import { initUsage, currentLockReason } from './usage.js';
 import { say, stop as stopAudio } from './audio.js';
 import { createBuddy, currentBuddy } from './buddy.js';
+import { initTouch, setTouchHelp } from './touch.js';
 
 const PARENT_HOLD_MS = 3000;   // 부모 메뉴: 3초 길게 누르기
 const GATE_IDLE_MS = 30000;    // 부모 확인 화면에서 30초 동안 입력이 없으면 아이 화면으로
@@ -106,6 +107,7 @@ function makeEmojiButton(item, extraClass = '') {
 function applySettings(s) {
   configureAudio({ volume: s.volume, rate: s.voiceRate, numberStyle: s.numberStyle, voiceName: s.voiceName, sfxStyle: s.sfxStyle });
   setReduceMotion(s.reduceMotion);
+  setTouchHelp(s.touchHelp);
   document.documentElement.dataset.dim = s.dimScreen ? 'on' : 'off';
   renderGames(s.gamesEnabled);
 }
@@ -314,6 +316,7 @@ function registerServiceWorker() {
 
 /* ---------- 시작 ---------- */
 preventAccidents();
+initTouch(loadSettings().touchHelp);
 applySettings(loadSettings());
 onSettingsChange((s) => applySettings(s));
 setupStart();

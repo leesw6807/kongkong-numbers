@@ -27,6 +27,7 @@ export const OPTIONS = {
   grapesPerBunch: [5, 10, 15, 20],
   buddyMode: ['even', 'priority'],
   sfxStyle: ['glocken', 'piano', 'softPiano', 'musicBox'],
+  touchHelp: ['off', 'normal', 'wide'],
 };
 
 function makeDefaults() {
@@ -50,6 +51,7 @@ function makeDefaults() {
     // 화면
     dimScreen: false,
     reduceMotion: false,
+    touchHelp: 'normal',                 // 터치 도움: 빗나가거나 미끄러져도 인정 (설계서 §1)
     // 보상
     favoriteFriend: null,                // null = 골고루
     buddyMode: 'even',                   // 메인 캐릭터: 골고루 | 우선순위대로 (설계서 §2)
@@ -97,6 +99,7 @@ export function sanitize(raw) {
 
   s.dimScreen = bool(r.dimScreen, d.dimScreen);
   s.reduceMotion = bool(r.reduceMotion, d.reduceMotion);
+  s.touchHelp = pick(r.touchHelp, OPTIONS.touchHelp, d.touchHelp);
 
   s.favoriteFriend = FRIENDS.some((f) => f.id === r.favoriteFriend) ? r.favoriteFriend : null;
   s.buddyMode = pick(r.buddyMode, OPTIONS.buddyMode, d.buddyMode);

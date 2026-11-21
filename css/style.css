@@ -1768,6 +1768,12 @@ button:focus-visible {
   gap: 14px;
 }
 
+/* 터치 도움이 켜져 있으면 아이 화면에서 브라우저가 터치를 가져가지 않게 (js/touch.js, 설계서 §1) */
+html:not([data-touch-help="off"]) .screen:not(.parent),
+html:not([data-touch-help="off"]) #break-layer {
+  touch-action: none;
+}
+
 /* 부모: 음성 진단 결과 */
 .diag-box {
   margin: 0;
