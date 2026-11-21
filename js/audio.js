@@ -52,23 +52,28 @@ function ensureCtx() {
     sfx: ctx.createGain(),
   };
   gains.voice.connect(ctx.destination);
-  // 효과음은 크게 낸 뒤 압축기로 찌그러짐(클리핑)을 막는다 — 태블릿 스피커에서 잘 들리게 (설계서 §7)
-  const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -12;
-  comp.knee.value = 6;
-  comp.ratio.value = 12;
-  comp.attack.value = 0.003;
-  comp.release.value = 0.1;
-  gains.sfx.connect(comp).connect(ctx.destination);
+  // 효과음은 크게(SFX_BOOST배) 낸 뒤 리미터로 찌그러짐(클리핑)을 막는다 — 태블릿 스피커에서 잘 들리게 (설계서 §7)
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.001;
+  limiter.release.value = 0.08;
+  gains.sfx.connect(limiter).connect(ctx.destination);
+  // 사인파에 2·3배음을 조금 섞은 파형: 부드러움은 유지하면서 작은 스피커에서 또렷하게 들린다
+  sfxWave = ctx.createPeriodicWave(new Float32Array([0, 0, 0, 0]), new Float32Array([0, 1, 0.5, 0.25]));
   applyGains();
   return ctx;
 }
 
+const SFX_BOOST = 1.8;
+let sfxWave = null;
+
 function applyGains() {
   if (!gains) return;
-  for (const k of ['voice', 'sfx']) {
-    gains[k].gain.value = Math.min(Math.max(config.volume[k], 0), 100) / 100;
-  }
+  const level = (k) => Math.min(Math.max(config.volume[k], 0), 100) / 100;
+  gains.voice.gain.value = level('voice');
+  gains.sfx.gain.value = level('sfx') * SFX_BOOST;
 }
 
 export function isUnlocked() {
@@ -435,16 +440,20 @@ export function sayPraise(options) {
 }
 
 /* ---------- 효과음 ---------- */
-// 합성음: 사인파, 짧고 부드럽게 (부정 효과음 없음)
-// 크기: 처음 0.22는 태블릿 스피커에서 너무 작았다(음량 60%면 최대 출력의 약 13%) → 0.65, 겹침은 압축기가 받는다
-function tone(freq, at, dur, peak = 0.65, endFreq = null) {
+// 합성음: 짧고 부드럽게 (부정 효과음 없음)
+// 크기(설계서 §7): 처음 사인파 0.22는 태블릿에서 너무 작았고(음량 60%면 최대 출력의 약 13%),
+// 0.65 + 압축기(v26)도 작다는 의견 → 배음 섞은 파형 + 최고 크기를 길이의 절반까지 유지 + 리미터.
+// 측정(음량 60%, 띵동): 소리 에너지 −23 → −11dB, 최대 0.95.
+function tone(freq, at, dur, peak = 0.95, endFreq = null) {
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
-  osc.type = 'sine';
+  if (sfxWave) osc.setPeriodicWave(sfxWave);
+  else osc.type = 'sine';
   osc.frequency.setValueAtTime(freq, at);
   if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, at + dur);
   g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(peak, at + 0.02);
+  g.gain.exponentialRampToValueAtTime(peak, at + 0.015);
+  g.gain.setValueAtTime(peak, at + dur * 0.5); // 절반까지 유지한 뒤 줄어든다
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
   osc.connect(g).connect(gains.sfx);
   osc.start(at);
@@ -452,10 +461,11 @@ function tone(freq, at, dur, peak = 0.65, endFreq = null) {
 }
 
 const SYNTH = {
-  sfx_tap: (t) => tone(660, t, 0.09, 0.5),
-  sfx_correct: (t) => { tone(784, t, 0.18); tone(1047, t + 0.14, 0.3); },
-  sfx_pop: (t) => tone(440, t, 0.16, 0.65, 880),
-  sfx_cheer: (t) => { tone(523, t, 0.2); tone(659, t + 0.13, 0.2); tone(784, t + 0.26, 0.4); },
+  // 길이는 처음보다 1.3배 (체감 크기를 위해)
+  sfx_tap: (t) => tone(660, t, 0.12),
+  sfx_correct: (t) => { tone(784, t, 0.23); tone(1047, t + 0.18, 0.39); },
+  sfx_pop: (t) => tone(440, t, 0.21, 0.95, 880),
+  sfx_cheer: (t) => { tone(523, t, 0.26); tone(659, t + 0.17, 0.26); tone(784, t + 0.34, 0.52); },
 };
 
 // name: 'tap' | 'correct' | 'pop' | 'cheer'
