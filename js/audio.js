@@ -59,15 +59,16 @@ function ensureCtx() {
   limiter.ratio.value = 20;
   limiter.attack.value = 0.001;
   limiter.release.value = 0.08;
-  gains.sfx.connect(limiter).connect(ctx.destination);
-  // 사인파에 2·3배음을 조금 섞은 파형: 부드러움은 유지하면서 작은 스피커에서 또렷하게 들린다
-  sfxWave = ctx.createPeriodicWave(new Float32Array([0, 0, 0, 0]), new Float32Array([0, 1, 0.5, 0.25]));
+  // 벨은 2ms 만에 올라가 리미터가 다 잡기 전에 조금 튀어나간다(측정 최대 1.20) → 리미터 뒤에서 줄여 1 아래로
+  const trim = ctx.createGain();
+  trim.gain.value = SFX_TRIM;
+  gains.sfx.connect(limiter).connect(trim).connect(ctx.destination);
   applyGains();
   return ctx;
 }
 
-const SFX_BOOST = 1.8;
-let sfxWave = null;
+const SFX_BOOST = 2.4; // 벨 소리는 금방 줄어들어 크게 보낸다 (최대값은 리미터가 막는다)
+const SFX_TRIM = 0.8;  // 리미터 뒤 출력 (최대값을 1 아래로)
 
 function applyGains() {
   if (!gains) return;
@@ -440,32 +441,37 @@ export function sayPraise(options) {
 }
 
 /* ---------- 효과음 ---------- */
-// 합성음: 짧고 부드럽게 (부정 효과음 없음)
-// 크기(설계서 §7): 처음 사인파 0.22는 태블릿에서 너무 작았고(음량 60%면 최대 출력의 약 13%),
-// 0.65 + 압축기(v26)도 작다는 의견 → 배음 섞은 파형 + 최고 크기를 길이의 절반까지 유지 + 리미터.
-// 측정(음량 60%, 띵동): 소리 에너지 −23 → −11dB, 최대 0.95.
-function tone(freq, at, dur, peak = 0.95, endFreq = null) {
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  if (sfxWave) osc.setPeriodicWave(sfxWave);
-  else osc.type = 'sine';
-  osc.frequency.setValueAtTime(freq, at);
-  if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, at + dur);
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(peak, at + 0.015);
-  g.gain.setValueAtTime(peak, at + dur * 0.5); // 절반까지 유지한 뒤 줄어든다
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  osc.connect(g).connect(gains.sfx);
-  osc.start(at);
-  osc.stop(at + dur + 0.02);
+// 합성음: 글로켄(벨) 소리 (설계서 §7, 부정 효과음 없음)
+// - 사용자가 dev/sfx.html에서 피아노·부드러운 피아노·벨·오르골 중 골랐다.
+// - 음 하나 = 사인파 부분음 4개. 주파수 비가 정수배가 아니라(1 : 2.76 : 5.4 : 8.93) 종소리가 난다.
+// - 2ms 만에 올라간 뒤 지수로 줄어들고, 높은 부분음일수록 빨리 사라진다.
+const BELL = { partials: [[1, 1], [2.76, 0.35], [5.4, 0.12], [8.93, 0.05]], tau: 0.6, attack: 0.002 };
+const BELL_SUM = BELL.partials.reduce((a, [, x]) => a + x, 0);
+
+// freq: 기본 음(Hz), at: 시작 시각, len: 음 길이(초), amp: 세기(0~1), endFreq: 끝 음(쭉 올라가는 소리)
+function bell(freq, at, len, amp = 1, endFreq = null) {
+  BELL.partials.forEach(([ratio, a], i) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * ratio, at);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq * ratio, at + len * 0.5);
+    const peak = (a / BELL_SUM) * amp;
+    const tau = (BELL.tau * len) / (1 + i * 0.9); // 높은 부분음일수록 빨리 줄어든다
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(peak, at + BELL.attack);
+    g.gain.setTargetAtTime(0, at + BELL.attack, tau);
+    osc.connect(g).connect(gains.sfx);
+    osc.start(at);
+    osc.stop(at + len + 0.3);
+  });
 }
 
 const SYNTH = {
-  // 길이는 처음보다 1.3배 (체감 크기를 위해)
-  sfx_tap: (t) => tone(660, t, 0.12),
-  sfx_correct: (t) => { tone(784, t, 0.23); tone(1047, t + 0.18, 0.39); },
-  sfx_pop: (t) => tone(440, t, 0.21, 0.95, 880),
-  sfx_cheer: (t) => { tone(523, t, 0.26); tone(659, t + 0.17, 0.26); tone(784, t + 0.34, 0.52); },
+  sfx_tap: (t) => bell(660, t, 0.35, 0.55),                                    // 톡 (자주 나므로 여리게)
+  sfx_correct: (t) => { bell(784, t, 0.6); bell(1047, t + 0.16, 0.9); },        // 띵동
+  sfx_pop: (t) => bell(440, t, 0.45, 1, 880),                                   // 쏙 (올라가는 소리)
+  sfx_cheer: (t) => { bell(523, t, 0.6); bell(659, t + 0.15, 0.6); bell(784, t + 0.3, 1.1); }, // 짜잔
 };
 
 // name: 'tap' | 'correct' | 'pop' | 'cheer'
