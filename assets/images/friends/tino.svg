@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 티노: 아기 티라노 (오리지널). 색은 :root 변수 — 앱에서 <use href="tino.svg#art">로 불러야 보인다 (설계서 §2) -->
+  <symbol id="art" viewBox="0 0 200 200">
+    <!-- 바닥 그림자 -->
+    <ellipse cx="100" cy="192" rx="62" ry="6" style="fill:var(--shadow)"/>
+    <!-- 꼬리 -->
+    <path d="M140 132 Q178 134 194 104 Q186 140 146 162 Z" style="fill:var(--sage)"/>
+    <!-- 머리 위 가시 3개 (둥글게) -->
+    <path d="M76 34 L84 12 L94 30 Z M90 28 L100 4 L110 28 Z M106 30 L116 12 L124 34 Z" style="fill:var(--sage);stroke:var(--sage);stroke-width:8;stroke-linejoin:round"/>
+    <path d="M76 34 L84 12 L94 30 Z M90 28 L100 4 L110 28 Z M106 30 L116 12 L124 34 Z" style="fill:var(--shadow-strong);stroke:var(--shadow-strong);stroke-width:8;stroke-linejoin:round"/>
+    <!-- 다리 -->
+    <rect x="62" y="164" width="30" height="28" rx="13" style="fill:var(--sage)"/>
+    <rect x="110" y="164" width="30" height="28" rx="13" style="fill:var(--sage)"/>
+    <rect x="62" y="164" width="30" height="28" rx="13" style="fill:var(--shadow)"/>
+    <rect x="110" y="164" width="30" height="28" rx="13" style="fill:var(--shadow)"/>
+    <!-- 몸 -->
+    <ellipse cx="101" cy="138" rx="54" ry="46" style="fill:var(--sage)"/>
+    <ellipse cx="98" cy="150" rx="32" ry="29" style="fill:var(--surface)"/>
+    <!-- 머리 -->
+    <ellipse cx="96" cy="72" rx="60" ry="48" style="fill:var(--sage)"/>
+    <!-- 눈 -->
+    <ellipse cx="76" cy="66" rx="7" ry="9" style="fill:var(--ink)"/>
+    <ellipse cx="116" cy="66" rx="7" ry="9" style="fill:var(--ink)"/>
+    <circle cx="78.5" cy="62" r="2.6" style="fill:var(--surface)"/>
+    <circle cx="118.5" cy="62" r="2.6" style="fill:var(--surface)"/>
+    <!-- 볼 -->
+    <ellipse cx="60" cy="86" rx="10" ry="6" style="fill:var(--apricot)"/>
+    <ellipse cx="132" cy="86" rx="10" ry="6" style="fill:var(--apricot)"/>
+    <!-- 입 (활짝 웃음) -->
+    <path d="M84 86 Q96 102 108 86 Z" style="fill:var(--ink);stroke:var(--ink);stroke-width:3;stroke-linejoin:round"/>
+    <!-- 짧은 팔: 가슴 앞에서 짝짝 (손끝이 거의 닿는다) -->
+    <path d="M76 132 L91 120 M122 132 L107 120" style="fill:none;stroke:var(--shadow-strong);stroke-width:17;stroke-linecap:round"/>
+    <path d="M76 132 L91 120 M122 132 L107 120" style="fill:none;stroke:var(--sage);stroke-width:12;stroke-linecap:round"/>
+  </symbol>
+  <use href="#art"/>
+</svg>

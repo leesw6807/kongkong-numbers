@@ -1,0 +1,1904 @@
+/* =========================================================
+   숫자 친구 콩콩이 — 스타일
+   색상은 반드시 아래 :root 변수만 사용한다. (설계서 §1)
+   ========================================================= */
+:root {
+  /* 기본 팔레트 */
+  --bg: #FAF6EE;        /* 배경 (크림) */
+  --surface: #FFFDF8;   /* 카드·패널, 이모지 받침 */
+  --ink: #4A4038;       /* 숫자·주요 형태 (진한 웜그레이) */
+  --muted: #B8AFA4;     /* 보조 선·비활성 */
+
+  /* 포인트 5색 (게임별 구분용, 한 화면 최대 3가지) */
+  --sage: #A8C3A0;
+  --sky: #A7C7DC;
+  --apricot: #F2C6A0;
+  --butter: #F3DE9A;
+  --lavender: #C9BEDF;
+
+  /* 반응 색 */
+  --success: #E9C46A;   /* 정답 반응 (은은한 금빛) */
+  --hint: #8FB8A8;      /* 힌트 강조 */
+  --grape: #A996C9;     /* 포도알 */
+
+  /* 파생 색 (--ink 기반 반투명) */
+  --shadow: rgba(74, 64, 56, 0.12);
+  --shadow-strong: rgba(74, 64, 56, 0.22);
+  --overlay: rgba(74, 64, 56, 0.35);       /* 확인 창 뒤 배경 */
+  --dim-layer: rgba(120, 84, 48, 0.22);    /* 화면 밝기 낮춤: 반투명 웜톤 */
+
+  /* 크기·시간 */
+  --touch-min: 120px;   /* 아이 터치 대상 최소 크기 (UX 원칙 2) */
+  --gap-min: 24px;      /* 터치 대상 최소 간격 */
+  --fade: 0.45s;        /* 화면 전환 페이드 */
+  --ease: ease-in-out;
+
+  color-scheme: light;
+}
+
+/* ---------- 기본 · 실수 방지 (UX 원칙 6) ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;            /* 당겨서 새로고침 방지 */
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+}
+
+body {
+  touch-action: manipulation;           /* 더블탭 확대 방지 */
+  -webkit-user-select: none;            /* 텍스트 선택 방지 */
+  user-select: none;
+  -webkit-touch-callout: none;          /* 길게 눌러 메뉴 방지 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 4px solid var(--hint);
+  outline-offset: 4px;
+}
+
+/* ---------- 화면 전환 (부드러운 페이드) ---------- */
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none; /* 사라지는 중인 화면이 새 화면의 터치를 가로채지 않게 */
+  transition: opacity var(--fade) var(--ease), visibility 0s linear var(--fade);
+}
+
+.screen.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--fade) var(--ease), visibility 0s;
+}
+
+/* ---------- 콩콩이 (CSS로 그린 임시 캐릭터) ---------- */
+.kong {
+  --size: clamp(140px, 26vmin, 260px);
+  position: relative;
+  width: var(--size);
+  height: calc(var(--size) * 0.82);
+  background: var(--sage);
+  border-radius: 52% 48% 46% 54% / 58% 56% 44% 42%;
+  box-shadow: inset 0 calc(var(--size) * -0.06) 0 var(--shadow), 0 8px 18px var(--shadow);
+  flex-shrink: 0;
+}
+
+.kong .eye {
+  position: absolute;
+  top: 38%;
+  width: 9%;
+  height: 13%;
+  background: var(--ink);
+  border-radius: 50%;
+}
+.kong .eye.l { left: 32%; }
+.kong .eye.r { right: 32%; }
+
+.kong .cheek {
+  position: absolute;
+  top: 55%;
+  width: 14%;
+  height: 9%;
+  background: var(--apricot);
+  border-radius: 50%;
+}
+.kong .cheek.l { left: 17%; }
+.kong .cheek.r { right: 17%; }
+
+.kong .mouth {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  width: 14%;
+  height: 9%;
+  transform: translateX(-50%);
+  border: calc(var(--size) * 0.022) solid var(--ink);
+  border-top: none;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+
+.kong.small {
+  --size: clamp(110px, 16vmin, 170px);
+}
+
+/* 메인 캐릭터가 그림(SVG) 친구일 때 (설계서 §2 "메인 캐릭터")
+   칸 크기·위치는 콩콩이와 같고, 정사각 그림을 칸 안에 맞춰 넣는다 (화면 크기 점검 결과를 깨지 않게) */
+.kong.art {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.kong.art > .friend-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* 정사각 그림을 납작한 칸에 맞추면 콩콩이보다 작아 보인다 → 배치는 그대로 두고 그림만 아래 기준으로 키운다 */
+  transform: scale(1.25);
+  transform-origin: 50% 100%;
+}
+
+/* 대기 중 천천히 숨쉬기 (크기 변화만, 깜빡임 없음) */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.kong.idle {
+  animation: breathe 3.2s var(--ease) infinite;
+}
+
+/* ---------- 시작 화면 ---------- */
+#screen-start {
+  flex-direction: column;
+  gap: clamp(var(--gap-min), 5vh, 56px);
+}
+
+.btn-start {
+  width: clamp(180px, 30vmin, 280px);
+  height: clamp(180px, 30vmin, 280px);
+  border-radius: 50%;
+  background: var(--butter);
+  box-shadow: 0 10px 0 var(--shadow-strong), 0 14px 28px var(--shadow);
+  display: grid;
+  place-items: center;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+.btn-start:active {
+  transform: translateY(6px) scale(0.97);
+  box-shadow: 0 4px 0 var(--shadow-strong), 0 8px 16px var(--shadow);
+}
+
+/* 재생 모양 삼각형 (글자 없이 "시작"을 표현) */
+.btn-start .play {
+  width: 0;
+  height: 0;
+  margin-left: 10%;
+  border-style: solid;
+  border-width: calc(clamp(180px, 30vmin, 280px) * 0.2) 0 calc(clamp(180px, 30vmin, 280px) * 0.2) calc(clamp(180px, 30vmin, 280px) * 0.32);
+  border-color: transparent transparent transparent var(--ink);
+  border-radius: 4px;
+}
+
+/* ---------- 메인 화면 ---------- */
+#screen-main {
+  flex-direction: column;
+  justify-content: space-evenly;
+  /* 위쪽은 ⚙️ 부모 버튼(아래 끝 100px) + 24px 아래에서 시작 — 낮은 화면에서도 게임 버튼과 붙지 않게 */
+  padding: 124px 3vw 4vh;
+}
+
+.game-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(var(--gap-min), 2.5vw, 40px);
+}
+
+/* 이모지는 연한 원형 받침 위에 올린다 (설계서 §1) */
+.emoji-btn {
+  --btn: clamp(140px, 16vw, 220px);
+  width: var(--btn);
+  height: var(--btn);
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  box-shadow: 0 8px 0 var(--shadow), 0 12px 24px var(--shadow);
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.emoji-btn .emoji {
+  font-size: calc(var(--btn) * 0.5);
+  /* 이모지 원색을 조금 누그러뜨림 */
+  filter: saturate(0.85);
+}
+
+.emoji-btn:active {
+  box-shadow: 0 3px 0 var(--shadow), 0 6px 12px var(--shadow);
+}
+
+.main-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(var(--gap-min), 6vw, 96px);
+}
+
+.btn-grapes {
+  --btn: clamp(150px, 22vmin, 200px);
+  border-color: var(--grape);
+}
+
+/* 선택됨·센 물체 표시 (effects.js mark) */
+.is-marked {
+  transform: scale(1.1);
+  border: 4px solid var(--ink);
+}
+
+/* ---------- 게임 공통 ---------- */
+.game-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--gap-min), 4vh, 40px);
+  /* 위쪽 156px: 🏠 버튼(아래 끝 136px) + 여유. 작은 화면에서 내용이 위로 밀려도 버튼과 겹치지 않게 */
+  padding: 156px 3vw 3vh;
+}
+
+/* 처음으로 버튼: 아이도 누를 수 있어 120px, 눈에 덜 띄게 */
+.btn-home {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  display: grid;
+  place-items: center;
+  font-size: 52px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.btn-home span {
+  filter: saturate(0.7);
+}
+
+.round-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  padding-bottom: 150px; /* 아래에서 나오는 축하 친구 자리 */
+}
+
+/* ---------- 스티커 칸 ---------- */
+.sticker-board {
+  display: flex;
+  gap: var(--gap-min);
+}
+
+.sticker-slot {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 4px dashed var(--muted);
+  display: grid;
+  place-items: center;
+  font-size: 60px;
+  line-height: 1;
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.sticker-slot.filled {
+  border-style: solid;
+  border-color: var(--success);
+  background: var(--surface);
+}
+
+.sticker-new {
+  display: inline-block;
+}
+
+/* ---------- 포도판 ---------- */
+#screen-grapes {
+  padding: 120px 3vw 160px;
+}
+
+/* 송이 폭은 화면에 맞춰 줄고(작은 화면 150px), 포도알 크기는 grapes.js가 송이 폭에 맞춰 계산한다 */
+.grape-board {
+  --g: 40px;
+  --bunch-w: clamp(150px, 16.5vw, 220px);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 28px);
+}
+
+.bunch {
+  position: relative;
+  width: var(--bunch-w);
+  padding: 12px 10px 10px;
+  border-radius: 28px;
+  background: var(--surface);
+  border: 3px solid var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 지금 채우는 송이: 굵은 포도색 테두리 + 아래 숫자 (색만으로 구분하지 않음) */
+.bunch.current {
+  border: 5px solid var(--grape);
+}
+
+.bunch.full {
+  border-color: var(--success);
+}
+
+.bunch-top {
+  position: relative;
+  height: 34px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.bunch-top .stem {
+  width: 8px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--ink);
+  opacity: 0.7;
+}
+
+.bunch-top .leaf {
+  position: absolute;
+  top: 2px;
+  left: calc(50% + 6px);
+  width: 36px;
+  height: 20px;
+  border-radius: 0 100% 0 100%;
+  background: var(--sage);
+}
+
+.bunch-top .ribbon {
+  position: absolute;
+  top: -6px;
+  right: 6px;
+  font-size: 36px;
+  line-height: 1;
+}
+
+.bunch.given .bunch-top::after {
+  content: "✔";
+  position: absolute;
+  top: -4px;
+  left: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--success);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+
+.grapes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.grape-row {
+  display: flex;
+  gap: 6px;
+}
+
+.grape-slot {
+  position: relative;
+  width: var(--g);
+  height: var(--g);
+  border-radius: 50%;
+  border: 3px dashed var(--muted);
+}
+
+.grape-slot.filled:not(.incoming),
+.grape-fly {
+  border: none;
+  background: var(--grape);
+  box-shadow: inset -3px -4px 0 var(--shadow);
+}
+
+/* 굴러갈 때 보이도록 작은 반짝점 */
+.grape-slot.filled:not(.incoming)::after,
+.grape-fly::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  left: 22%;
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+  background: var(--surface);
+  opacity: 0.55;
+}
+
+.grape-fly {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.bunch-foot {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.bunch-count {
+  min-width: 52px;
+  height: 52px;
+  padding: 0 8px;
+  border-radius: 26px;
+  background: var(--grape);
+  color: var(--ink);
+  font-size: 32px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.bunch-foot .gift {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.grapes-kong {
+  position: absolute;
+  left: 32px;
+  bottom: 24px;
+}
+
+.give-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--bg);
+  font-size: 17px;
+}
+
+.give-state {
+  font-weight: 700;
+  min-width: 150px;
+}
+
+.give-state.waiting {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--success);
+}
+
+.give-reward {
+  flex: 1;
+  opacity: 0.85;
+}
+
+.ps-control .row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------- 부모: 이용 현황 · 학습 기록 ---------- */
+.usage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 18px;
+}
+
+.usage-big {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.rec-h {
+  margin: 10px 0 0;
+  font-size: 19px;
+}
+
+.rec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.rec-table th,
+.rec-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--muted);
+  white-space: nowrap; /* "120문/제"처럼 끊기지 않게 (좁은 화면은 막대가 대신 줄어든다) */
+}
+
+.rec-table th {
+  font-size: 14px;
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.rec-table td.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-game {
+  white-space: nowrap;
+}
+
+/* 정답률 막대: 한 가지 색, 값은 글자로 함께 표시 (대비가 낮은 파스텔이라 글자가 필수) */
+.rec-bar {
+  position: relative;
+  display: block;
+  width: clamp(72px, 10vw, 160px);
+  height: 40px; /* 부모 영역 누르는 대상 최소 40px */
+  border-radius: 6px;
+  background: var(--bg);
+  border: 2px solid var(--muted);
+  overflow: hidden;
+  text-align: left;
+}
+
+.rec-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--hint);
+  border-radius: 0 4px 4px 0;
+}
+
+.rec-val {
+  position: relative;
+  padding-left: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 36px;
+}
+
+/* 최근 7일 막대 */
+.week-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 0 4px;
+}
+
+.week-col {
+  flex: 1;
+  max-width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border-radius: 10px;
+}
+
+.week-val {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  border-bottom: 2px solid var(--muted);
+}
+
+.week-bar {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 0;
+  background: var(--grape);
+  border-radius: 4px 4px 0 0;
+}
+
+/* 오늘: 막대 테두리 + "오늘" 글자 (색만으로 구분하지 않음) */
+.week-col.today .week-bar {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.week-col.today .week-day {
+  font-weight: 800;
+}
+
+.week-limit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed var(--ink);
+  opacity: 0.45;
+  z-index: 1;
+}
+
+.week-day {
+  font-size: 16px;
+}
+
+.week-date {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.wrong-chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 2px solid var(--muted);
+  font-size: 17px;
+}
+
+.wrong-chip b {
+  font-size: 22px;
+}
+
+/* 보물 상자 */
+.treasure {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  z-index: 20;
+}
+
+.treasure[hidden] {
+  display: none;
+}
+
+.treasure-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.treasure-plate {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 6px solid var(--success);
+  box-shadow: 0 10px 0 var(--shadow), 0 16px 30px var(--shadow);
+  display: grid;
+  place-items: center;
+}
+
+.treasure-emoji {
+  font-size: 160px;
+  line-height: 1;
+  filter: saturate(0.85);
+}
+
+/* 보상 글: 부모용이므로 그림보다 작게 */
+.treasure-text {
+  margin: 0;
+  min-height: 30px;
+  font-size: 22px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.treasure-next {
+  width: 160px;
+  height: 160px;
+}
+
+.treasure-next .play {
+  border-width: 32px 0 32px 52px;
+}
+
+/* ---------- 축하 친구 ---------- */
+#celebrate-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 40;
+}
+
+.friend {
+  --friend: clamp(130px, 13vw, 170px);
+  width: var(--friend);
+  height: var(--friend);
+  display: grid;
+  place-items: center;
+}
+
+.friend.peek {
+  position: absolute;
+  bottom: 24px;
+}
+
+.friend.peek.left { left: 24px; }
+.friend.peek.right { right: 24px; }
+
+.friend-plate {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  box-shadow: 0 8px 18px var(--shadow);
+  display: grid;
+  place-items: center;
+}
+
+.friend-emoji {
+  font-size: calc(var(--friend) * 0.58);
+  line-height: 1;
+  filter: saturate(0.85);
+}
+
+.friend .kong {
+  --size: var(--friend);
+}
+
+/* 친구 SVG 그림 (설계서 §2) — 색은 SVG 안에서 :root 변수로 칠한다 */
+.friend-art {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.round-friends {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 56px;
+}
+
+.new-friend-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.new-friend {
+  --friend: 240px;
+}
+
+/* ---------- 게임 ① 콕콕 세어 보기 ---------- */
+.count-area {
+  --obj: clamp(120px, 13vw, 170px);
+  --obj-gap: clamp(var(--gap-min), 2.4vw, 36px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--obj-gap);
+  max-width: calc(var(--per-row, 5) * var(--obj) + (var(--per-row, 5) - 1) * var(--obj-gap) + 2px);
+}
+
+.count-obj {
+  --btn: var(--obj);
+  position: relative;
+}
+
+/* 센 순서 숫자 (화면 글자는 숫자만 허용) */
+.num-badge {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--success);
+  border: 3px solid var(--surface);
+  color: var(--ink);
+  font-size: 30px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  transform: scale(0);
+  transition: transform 0.3s var(--ease);
+}
+
+.count-obj.counted .num-badge {
+  transform: scale(1);
+}
+
+/* 결과 줄은 화면 높이에 맞춰 줄어든다 (낮은 화면에서 물체 두 줄 + 결과 줄이 들어가도록) */
+.count-result {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  min-height: clamp(100px, 18vh, 180px);
+}
+
+.count-result .kong {
+  --size: clamp(90px, 14vh, 170px);
+}
+
+.big-num {
+  min-width: clamp(88px, 15vh, 140px);
+  height: clamp(100px, 18vh, 170px);
+  padding: 0 clamp(12px, 2.5vh, 22px);
+  border-radius: 26px;
+  background: var(--surface);
+  border: 4px solid var(--ink);
+  box-shadow: 0 8px 0 var(--shadow);
+  display: grid;
+  place-items: center;
+  font-size: clamp(64px, 12vh, 110px);
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+
+.count-result.show .big-num {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ---------- 게임 ② 몇 개일까? ---------- */
+/* 물체 묶음: 누르는 대상이 아니므로 count보다 작게 */
+.choose-group {
+  --obj: clamp(90px, 9vw, 120px);
+  --obj-gap: clamp(16px, 1.8vw, 24px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--obj-gap);
+  max-width: calc(var(--per-row, 5) * var(--obj) + (var(--per-row, 5) - 1) * var(--obj-gap) + 2px);
+}
+
+.choose-obj {
+  --btn: var(--obj);
+  position: relative;
+  cursor: default;
+  /* 누르는 대상이 아니므로 .emoji-btn의 최소 120px을 풀어 한 줄 5개(5개 단위 묶음)를 지킨다 */
+  min-width: 0;
+  min-height: 0;
+}
+
+.choose-obj.counted .num-badge {
+  transform: scale(1);
+}
+
+.choose-obj .num-badge {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  top: -10px;
+  right: -10px;
+}
+
+/* 숫자 카드: 아이가 누르는 대상 (120px 이상, 간격 24px 이상) */
+.choice-cards {
+  display: flex;
+  justify-content: center;
+  gap: clamp(32px, 4vw, 56px);
+}
+
+.choice-card {
+  width: 150px;
+  height: 180px;
+  border-radius: 26px;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  box-shadow: 0 8px 0 var(--shadow), 0 12px 24px var(--shadow);
+  font-size: 110px;
+  font-weight: 800;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.4s var(--ease), transform 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.choice-card:active {
+  box-shadow: 0 3px 0 var(--shadow), 0 6px 12px var(--shadow);
+}
+
+/* 틀린 카드: 흐리고 작게 (색만으로 구분하지 않음) — 다시 누를 수 없음 */
+.choice-card.dim {
+  opacity: 0.35;
+  transform: scale(0.9);
+  box-shadow: none;
+  cursor: default;
+}
+
+/* 맞힌 뒤 나머지 카드 */
+.choice-card.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- 게임 ③ 바구니 채우기 ---------- */
+/* 작은 화면(약 960px 폭)에서도 물체가 한 줄 5개(120px)를 지키도록 가로를 아껴 쓴다 */
+.basket-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--gap-min), 3vw, 96px);
+}
+
+.basket-pool {
+  --obj: clamp(120px, 10.5vw, 140px);
+  --obj-gap: clamp(var(--gap-min), 2vw, 32px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--obj-gap);
+  max-width: calc(var(--per-row, 5) * var(--obj) + (var(--per-row, 5) - 1) * var(--obj-gap) + 2px);
+  flex-shrink: 0; /* 물체 칸은 줄이지 않는다 (줄면 한 줄 5개가 4개로 나뉨). 남는 폭은 바구니 쪽이 양보 */
+}
+
+.basket-zone {
+  min-width: 0;
+}
+
+.basket-obj {
+  --btn: var(--obj);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+
+/* 담은 물체: 자리는 남기고 투명하게 (배치가 흔들리지 않게) */
+.basket-obj.taken {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 목표를 채운 뒤 남은 물체 */
+.basket-obj.left {
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+}
+
+.basket-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* 담긴 물체를 작게 모아 보여 준다 (한 줄 5개) */
+.basket-tray {
+  --ti: clamp(30px, 3.4vw, 44px);
+  display: grid;
+  grid-template-columns: repeat(5, var(--ti));
+  gap: 4px;
+  min-height: calc(var(--ti) * 2 + 4px);
+  align-content: end;
+  justify-content: center;
+}
+
+.tray-item {
+  font-size: calc(var(--ti) * 0.8);
+  line-height: var(--ti);
+  text-align: center;
+  filter: saturate(0.85);
+}
+
+.basket-plate {
+  position: relative;
+  width: clamp(160px, 18vw, 240px);
+  height: clamp(160px, 18vw, 240px);
+  border-radius: 50%;
+  background: var(--surface);
+  border: 5px solid var(--muted);
+  box-shadow: 0 8px 0 var(--shadow), 0 12px 24px var(--shadow);
+  display: grid;
+  place-items: center;
+  transition: border-color 0.4s var(--ease);
+}
+
+/* 다 채움: 테두리 + 숫자 배지 (색만으로 구분하지 않음) */
+.basket-plate.full {
+  border-color: var(--success);
+}
+
+.basket-emoji {
+  font-size: clamp(88px, 10vw, 140px);
+  line-height: 1;
+  filter: saturate(0.85);
+}
+
+.basket-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  min-width: 64px;
+  height: 64px;
+  padding: 0 10px;
+  border-radius: 32px;
+  background: var(--success);
+  border: 4px solid var(--surface);
+  color: var(--ink);
+  font-size: 38px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.basket-fly {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  font-size: 64px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ---------- 게임 ④ 어느 쪽이 많아? ---------- */
+.compare-row {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: clamp(48px, 6vw, 96px);
+}
+
+/* 접시 전체가 누르는 대상 (두 접시 크기 같음) */
+.compare-plate {
+  position: relative;
+  width: clamp(360px, 36vw, 470px);
+  height: clamp(300px, 46vh, 400px);
+  border-radius: 48% / 40%;
+  background: var(--surface);
+  border: 5px solid var(--muted);
+  box-shadow: 0 10px 0 var(--shadow), 0 14px 28px var(--shadow);
+  display: grid;
+  place-items: center;
+  transition: border-color 0.3s var(--ease);
+}
+
+.compare-plate:active {
+  box-shadow: 0 4px 0 var(--shadow), 0 8px 16px var(--shadow);
+}
+
+/* 물체: 누르는 대상이 아니므로 작게, 한 줄 5개 */
+.compare-items {
+  --it: clamp(56px, 5.4vw, 72px);
+  display: grid;
+  grid-template-columns: repeat(var(--per-row, 5), var(--it));
+  gap: 12px;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.compare-item {
+  position: relative;
+  width: var(--it);
+  height: var(--it);
+  border-radius: 50%;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  transition: transform 0.3s var(--ease);
+}
+
+.compare-item .emoji {
+  font-size: calc(var(--it) * 0.66);
+  line-height: 1;
+  filter: saturate(0.85);
+}
+
+.compare-item.is-marked {
+  border-width: 3px;
+}
+
+.compare-item .num-badge {
+  width: 30px;
+  height: 30px;
+  font-size: 17px;
+  top: -8px;
+  right: -8px;
+  border-width: 2px;
+}
+
+.compare-item.counted .num-badge {
+  transform: scale(1);
+}
+
+/* 맞힌 뒤 두 접시에 개수 숫자 (화면 글자는 숫자만) */
+.plate-count {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  min-width: 72px;
+  height: 72px;
+  padding: 0 12px;
+  border-radius: 36px;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  font-size: 44px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%) scale(0);
+  transition: transform 0.4s var(--ease);
+}
+
+.compare-row.answered .plate-count {
+  transform: translateX(-50%) scale(1);
+}
+
+/* 많은 쪽(정답) 접시: mark(1.1배 + 굵은 테두리) + 금빛 숫자 배지 */
+.compare-plate.is-marked .plate-count {
+  background: var(--success);
+  border-color: var(--ink);
+}
+
+/* ---------- 게임 ⑤ 징검다리 ---------- */
+.stones-scene {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: min(100%, 1180px);
+  height: clamp(380px, 60vh, 480px);
+}
+
+.stones-bank {
+  width: clamp(110px, 11vw, 150px);
+  flex-shrink: 0;
+  background: var(--sage);
+  opacity: 0.55;
+  border-radius: 40px;
+}
+
+.stones-bank.right {
+  opacity: 1;
+  background: none;
+  display: grid;
+  place-items: center;
+}
+
+/* 강: 한 가지 색 띠, 돌은 위·아래 번갈아 (지그재그) */
+.stones-river {
+  flex: 1;
+  margin: 0 12px;
+  border-radius: 40px;
+  background: var(--sky);
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  justify-items: center;
+  padding: 24px 12px;
+}
+
+.stone-slot {
+  display: grid;
+  place-items: center;
+}
+
+/* 돌: 아이가 누르는 대상 (120px 이상), 숫자만 표시 */
+.stone {
+  width: clamp(120px, 10.5vw, 136px);
+  height: clamp(120px, 10.5vw, 136px);
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  background: var(--surface);
+  border: 5px solid var(--muted);
+  box-shadow: 0 8px 0 var(--shadow), 0 12px 24px var(--shadow);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: transform 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.stone:active {
+  box-shadow: 0 3px 0 var(--shadow), 0 6px 12px var(--shadow);
+}
+
+/* 밟은 돌: mark(1.1배 + 굵은 테두리) — 색만으로 구분하지 않음 */
+.stone.stepped {
+  box-shadow: 0 4px 0 var(--shadow);
+}
+
+.stones-goal {
+  width: clamp(110px, 11vw, 150px);
+  height: clamp(110px, 11vw, 150px);
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  display: grid;
+  place-items: center;
+}
+
+.stones-goal .emoji {
+  font-size: clamp(64px, 6vw, 90px);
+  line-height: 1;
+  filter: saturate(0.85);
+}
+
+/* 뛰어 건너는 콩콩이 (누르는 대상 아님) */
+.stones-kong {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.stones-kong .kong {
+  --size: 96px;
+}
+
+/* 자체 테두리가 있는 대상도 mark(선택됨·밟음·정답) 때 진한 테두리가 보이게 한다.
+   (.is-marked가 이 대상들의 border 선언보다 앞에 있어 덮어써지던 문제) */
+.stone.is-marked,
+.choice-card.is-marked,
+.compare-plate.is-marked {
+  border-color: var(--ink);
+}
+
+/* ---------- 잠금 화면 · 쉬는 시간 ---------- */
+#screen-lock {
+  flex-direction: column;
+}
+
+.lock-box,
+.break-box {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+}
+
+.lock-plate {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  box-shadow: 0 8px 18px var(--shadow);
+  display: grid;
+  place-items: center;
+}
+
+.lock-moon {
+  font-size: 140px;
+  line-height: 1;
+  filter: saturate(0.8);
+}
+
+.break-layer {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  z-index: 60;
+}
+
+.break-layer[hidden] {
+  display: none;
+}
+
+/* ▶는 20초 쉰 뒤에 천천히 나타난다 */
+.break-next {
+  width: 150px;
+  height: 150px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease);
+}
+
+.break-next.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.break-next .play {
+  border-width: 30px 0 30px 48px;
+}
+
+/* ---------- 부모 메뉴 진입 아이콘 (3초 길게 누르기) ---------- */
+/* 아이용 대상이 아니므로 눈에 덜 띄게 두되, 어른 손가락으로 누르기 쉬운 크기 */
+.btn-parent {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  opacity: 0.55;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+
+.btn-parent.holding {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.btn-parent svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.btn-parent .ring-bg {
+  fill: var(--surface);
+  stroke: var(--muted);
+  stroke-width: 4;
+}
+
+.btn-parent .ring {
+  fill: none;
+  stroke: var(--hint);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.btn-parent .gear {
+  position: relative;
+  font-size: 36px;
+  line-height: 1;
+  filter: grayscale(1);
+}
+
+/* ---------- 부모 영역 (글자 허용 · UX 원칙 1 예외) ---------- */
+.parent {
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.parent h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.parent p {
+  margin: 0;
+  font-size: 20px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.parent .sub {
+  opacity: 0.75;
+  font-size: 18px;
+}
+
+.gate-panel {
+  display: flex;
+  gap: 48px;
+  align-items: center;
+}
+
+.gate-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.gate-question {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.gate-answer {
+  min-width: 180px;
+  height: 84px;
+  padding: 0 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 4px solid var(--muted);
+  font-size: 52px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 88px);
+  gap: 14px;
+}
+
+.keypad button,
+.parent .btn-text {
+  height: 76px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 3px solid var(--muted);
+  font-size: 32px;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--shadow);
+}
+
+.keypad button:active,
+.parent .btn-text:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--shadow);
+}
+
+.keypad .key-ok {
+  background: var(--sage);
+  border-color: var(--sage);
+  font-size: 24px;
+}
+
+.keypad .key-del {
+  font-size: 26px;
+}
+
+.parent .btn-text {
+  height: 64px;
+  padding: 0 28px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.parent .actions {
+  display: flex;
+  gap: 24px;
+}
+
+.parent .btn-text.primary {
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+/* ---------- 부모 설정 화면 ---------- */
+.parent-settings {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 20px 28px 24px;
+}
+
+.parent-settings input,
+.parent-settings textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.ps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.ps-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 24px;
+}
+
+.ps-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.ps-tab {
+  height: 64px;
+  border-radius: 16px;
+  border: 3px solid var(--muted);
+  background: var(--surface);
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.ps-tab[aria-pressed="true"] {
+  background: var(--sage);
+  border-color: var(--ink);
+}
+
+.ps-panel {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  background: var(--surface);
+  border: 3px solid var(--muted);
+  border-radius: 22px;
+  padding: 8px 28px 28px;
+}
+
+.ps-panel h2 {
+  margin: 16px 0 4px;
+  font-size: 26px;
+}
+
+.ps-item {
+  padding: 20px 0;
+  border-bottom: 2px dashed var(--muted);
+}
+
+.ps-item:last-child {
+  border-bottom: none;
+}
+
+.ps-item-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ps-item h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.parent .ps-help {
+  margin: 6px 0 0;
+  font-size: 16px;
+  text-align: left;
+  opacity: 0.8;
+}
+
+.parent .ps-help.warn {
+  opacity: 1;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid var(--muted);
+}
+
+.badge.live {
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+.badge.stored {
+  background: var(--butter);
+  border-color: var(--butter);
+}
+
+.badge.wait {
+  background: var(--bg);
+}
+
+.ps-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ps-control.column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
+
+/* 선택 칩: 선택 상태는 색 + 굵은 테두리 + ✓ 표시 (색만으로 구분하지 않음) */
+.chip {
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border: 3px solid var(--muted);
+  background: var(--bg);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--sage);
+  border-color: var(--ink);
+}
+
+.chip[aria-pressed="true"]::before {
+  content: "✓ ";
+}
+
+.chip.ghost {
+  border-style: dashed;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chip.small {
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 16px;
+}
+
+.chip.emoji-chip {
+  font-size: 24px;
+  min-width: 56px;
+}
+
+.chip.emoji-chip[aria-pressed="true"]::before {
+  content: "";
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.range-row input[type="range"] {
+  width: 360px;
+  height: 40px;
+  accent-color: var(--hint);
+}
+
+.range-value {
+  min-width: 48px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+}
+
+.parent-settings input[type="time"],
+.parent-settings input[type="text"] {
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 3px solid var(--muted);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+}
+
+.parent-settings input:disabled {
+  opacity: 0.45;
+}
+
+.reward-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.reward-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 부모: 메인 캐릭터 우선순위 */
+.buddy-modes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.buddy-order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.buddy-order.is-off {
+  opacity: 0.55; /* "골고루"일 때는 순서가 쓰이지 않음 (순서는 미리 바꿔 둘 수 있다) */
+}
+
+.buddy-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: var(--bg);
+  font-size: 18px;
+}
+
+.buddy-rank {
+  min-width: 28px;
+  font-weight: 700;
+}
+
+.buddy-name {
+  flex: 1;
+}
+
+.buddy-name small {
+  font-size: 15px;
+}
+
+.chip.is-hidden {
+  visibility: hidden;
+}
+
+.reward-no {
+  font-size: 18px;
+  font-weight: 700;
+  min-width: 80px;
+}
+
+.reward-head input[type="text"] {
+  flex: 1;
+  max-width: 420px;
+  background: var(--surface);
+}
+
+.emoji-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ps-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease);
+}
+
+.ps-toast.show {
+  opacity: 0.92;
+}
+
+.ps-modal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+  z-index: 10;
+}
+
+.ps-modal[hidden] {
+  display: none;
+}
+
+.ps-modal-box {
+  width: min(560px, 90vw);
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 3px solid var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.ps-modal-box p {
+  font-size: 21px;
+}
+
+/* ---------- 화면 밝기 낮춤 (부모 설정) ---------- */
+#dim-layer {
+  position: fixed;
+  inset: 0;
+  background: var(--dim-layer);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--fade) var(--ease);
+  z-index: 100;
+}
+
+html[data-dim="on"] #dim-layer {
+  opacity: 1;
+}
+
+/* 움직임 줄이기 (부모 설정, 6단계에서 연결) */
+html[data-reduce-motion="on"] .kong.idle {
+  animation: none;
+}

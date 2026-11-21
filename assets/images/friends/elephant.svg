@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 아기 코끼리 (오리지널). 코를 위로 말아 올린 기쁜 모습 (설계서 §2) -->
+  <symbol id="art" viewBox="0 0 200 200">
+    <ellipse cx="100" cy="192" rx="56" ry="6" style="fill:var(--shadow)"/>
+    <!-- 귀 -->
+    <circle cx="50" cy="88" r="40" style="fill:var(--sky)"/>
+    <circle cx="150" cy="88" r="40" style="fill:var(--sky)"/>
+    <circle cx="52" cy="90" r="25" style="fill:var(--apricot)"/>
+    <circle cx="148" cy="90" r="25" style="fill:var(--apricot)"/>
+    <!-- 다리 -->
+    <rect x="68" y="166" width="26" height="26" rx="11" style="fill:var(--sky)"/>
+    <rect x="106" y="166" width="26" height="26" rx="11" style="fill:var(--sky)"/>
+    <rect x="68" y="166" width="26" height="26" rx="11" style="fill:var(--shadow)"/>
+    <rect x="106" y="166" width="26" height="26" rx="11" style="fill:var(--shadow)"/>
+    <!-- 몸 (코와 구별되게 살짝 그늘) -->
+    <ellipse cx="100" cy="152" rx="46" ry="34" style="fill:var(--sky)"/>
+    <ellipse cx="100" cy="152" rx="46" ry="34" style="fill:var(--shadow)"/>
+    <!-- 머리 -->
+    <circle cx="100" cy="90" r="48" style="fill:var(--sky)"/>
+    <!-- 코 (두 눈 사이에서 내려와 위로 말림) -->
+    <path d="M100 96 Q99 146 118 146 Q136 146 136 126" style="fill:none;stroke:var(--shadow-strong);stroke-width:21;stroke-linecap:round"/>
+    <path d="M100 96 Q99 146 118 146 Q136 146 136 126" style="fill:none;stroke:var(--sky);stroke-width:16;stroke-linecap:round"/>
+    <path d="M100 86 V100" style="fill:none;stroke:var(--sky);stroke-width:16;stroke-linecap:round"/>
+    <!-- 머리 위 털 한 가닥 -->
+    <path d="M100 44 Q96 32 106 28" style="fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round"/>
+    <!-- 눈 -->
+    <ellipse cx="82" cy="84" rx="6.5" ry="8.5" style="fill:var(--ink)"/>
+    <ellipse cx="118" cy="84" rx="6.5" ry="8.5" style="fill:var(--ink)"/>
+    <circle cx="84.3" cy="80" r="2.4" style="fill:var(--surface)"/>
+    <circle cx="120.3" cy="80" r="2.4" style="fill:var(--surface)"/>
+    <!-- 볼 -->
+    <ellipse cx="68" cy="104" rx="9" ry="5.5" style="fill:var(--apricot)"/>
+    <ellipse cx="132" cy="104" rx="9" ry="5.5" style="fill:var(--apricot)"/>
+    <!-- 입 (코 옆 작은 웃음) -->
+    <path d="M78 118 Q84 124 90 118" style="fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round"/>
+  </symbol>
+  <use href="#art"/>
+</svg>

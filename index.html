@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>숫자 친구 콩콩이</title>
+  <!-- theme-color는 HTML 속성이라 CSS 변수를 쓸 수 없음: --bg 값과 동일하게 유지 -->
+  <meta name="theme-color" content="#FAF6EE">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+  <link rel="stylesheet" href="./css/style.css">
+  <script type="module" src="./js/main.js"></script>
+</head>
+<body>
+  <main id="app">
+
+    <!-- 시작 화면: 탭 한 번으로 오디오 활성화 -->
+    <section id="screen-start" class="screen active" aria-label="시작">
+      <div class="kong idle" aria-hidden="true">
+        <span class="eye l"></span><span class="eye r"></span>
+        <span class="cheek l"></span><span class="cheek r"></span>
+        <span class="mouth"></span>
+      </div>
+      <button id="btn-start" class="btn-start" aria-label="시작"><span class="play"></span></button>
+    </section>
+
+    <!-- 메인 화면: 게임 5개 + 포도판 (글자 없음) -->
+    <section id="screen-main" class="screen" aria-label="메인">
+      <div id="game-row" class="game-row"></div>
+      <div class="main-bottom">
+        <div class="kong small idle" aria-hidden="true">
+          <span class="eye l"></span><span class="eye r"></span>
+          <span class="cheek l"></span><span class="cheek r"></span>
+          <span class="mouth"></span>
+        </div>
+        <button id="btn-grapes" class="emoji-btn btn-grapes" aria-label="포도판"></button>
+      </div>
+
+      <!-- 부모 메뉴 진입: 3초 길게 누르기 -->
+      <button id="btn-parent" class="btn-parent" aria-label="부모 메뉴 (3초 길게 누르기)">
+        <svg viewBox="0 0 84 84" aria-hidden="true">
+          <circle class="ring-bg" cx="42" cy="42" r="36"></circle>
+          <circle class="ring" cx="42" cy="42" r="36"></circle>
+        </svg>
+        <span class="gear" aria-hidden="true">⚙️</span>
+      </button>
+    </section>
+
+    <!-- 잠금 화면: 하루 이용 시간을 다 썼거나 이용 가능 시간대가 아닐 때 (글자 없음) -->
+    <section id="screen-lock" class="screen" aria-label="오늘은 여기까지">
+      <div class="lock-box">
+        <div class="kong idle" aria-hidden="true">
+          <span class="eye l"></span><span class="eye r"></span>
+          <span class="cheek l"></span><span class="cheek r"></span>
+          <span class="mouth"></span>
+        </div>
+        <div class="lock-plate" aria-hidden="true"><span class="lock-moon">🌙</span></div>
+      </div>
+      <!-- 잠금 중에도 부모는 3초 길게 눌러 설정을 바꿀 수 있다 -->
+      <button class="btn-parent" aria-label="부모 메뉴 (3초 길게 누르기)">
+        <svg viewBox="0 0 84 84" aria-hidden="true">
+          <circle class="ring-bg" cx="42" cy="42" r="36"></circle>
+          <circle class="ring" cx="42" cy="42" r="36"></circle>
+        </svg>
+        <span class="gear" aria-hidden="true">⚙️</span>
+      </button>
+    </section>
+
+    <!-- 게임 화면: 내용은 js/play.js와 js/games/*.js가 그림 -->
+    <section id="screen-game" class="screen" aria-label="게임">
+      <div id="game-stage" class="game-stage"></div>
+      <button id="btn-home" class="btn-home" aria-label="처음으로"><span aria-hidden="true">🏠</span></button>
+    </section>
+
+    <!-- 포도판: 내용은 js/grapes.js가 그림 -->
+    <section id="screen-grapes" class="screen" aria-label="포도판">
+      <div id="grape-board" class="grape-board"></div>
+      <div id="grapes-kong" class="grapes-kong" aria-hidden="true"></div>
+      <button id="grapes-home" class="btn-home" aria-label="처음으로"><span aria-hidden="true">🏠</span></button>
+
+      <!-- 보물 상자: 송이를 다 채우면 (보상 글은 부모용이라 작게 · UX 원칙 1 예외) -->
+      <div id="treasure" class="treasure" hidden>
+        <div class="treasure-main">
+          <div id="treasure-plate" class="treasure-plate"><span id="treasure-emoji" class="treasure-emoji">🎁</span></div>
+          <p id="treasure-text" class="treasure-text"></p>
+        </div>
+        <button id="treasure-next" class="btn-start treasure-next" aria-label="계속"><span class="play"></span></button>
+      </div>
+    </section>
+
+    <!-- 부모 확인: 덧셈 (부모 영역이므로 글자 허용) -->
+    <section id="screen-gate" class="screen parent" aria-label="부모 확인">
+      <h1>부모 확인</h1>
+      <p class="sub">아래 덧셈의 답을 입력하세요.</p>
+      <div class="gate-panel">
+        <div class="gate-left">
+          <div id="gate-question" class="gate-question"></div>
+          <div id="gate-answer" class="gate-answer"></div>
+        </div>
+        <div id="keypad" class="keypad">
+          <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+          <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+          <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+          <button data-key="del" class="key-del" aria-label="지우기">⌫</button>
+          <button data-key="0">0</button>
+          <button data-key="ok" class="key-ok">확인</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="gate-cancel" class="btn-text">취소</button>
+      </div>
+    </section>
+
+    <!-- 부모 설정 (js/parent.js가 내용을 그림) -->
+    <section id="screen-parent" class="screen parent parent-settings" aria-label="부모 설정">
+      <header class="ps-head">
+        <h1>부모 설정</h1>
+        <button id="parent-exit" class="btn-text">아이 화면으로 돌아가기</button>
+      </header>
+      <div class="ps-body">
+        <nav id="ps-nav" class="ps-nav" aria-label="설정 구분"></nav>
+        <div id="ps-panel" class="ps-panel"></div>
+      </div>
+      <input id="ps-file" type="file" accept="application/json,.json" hidden>
+      <div id="ps-toast" class="ps-toast" role="status" aria-live="polite"></div>
+      <div id="ps-modal" class="ps-modal" hidden>
+        <div class="ps-modal-box" role="dialog" aria-modal="true">
+          <p id="ps-modal-text"></p>
+          <div class="actions">
+            <button id="ps-modal-cancel" class="btn-text">취소</button>
+            <button id="ps-modal-ok" class="btn-text primary">확인</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 축하 친구가 나오는 층 (화면 가장자리, 터치는 통과) -->
+    <div id="celebrate-layer" aria-hidden="true"></div>
+
+    <!-- 쉬는 시간: "눈도 쉬어야 해" — 20초 뒤 ▶가 나온다 (js/usage.js) -->
+    <div id="break-layer" class="break-layer" hidden>
+      <div class="break-box">
+        <div class="kong idle" aria-hidden="true">
+          <span class="eye l"></span><span class="eye r"></span>
+          <span class="cheek l"></span><span class="cheek r"></span>
+          <span class="mouth"></span>
+        </div>
+        <div class="lock-plate" aria-hidden="true"><span class="lock-moon">🌳</span></div>
+      </div>
+      <button id="break-next" class="btn-start break-next" aria-label="계속"><span class="play"></span></button>
+    </div>
+  </main>
+
+  <!-- 화면 밝기 낮춤 (부모 설정) -->
+  <div id="dim-layer" aria-hidden="true"></div>
+</body>
+</html>

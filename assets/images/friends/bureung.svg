@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 부릉이: 꼬마 버스 (오리지널). 얼굴은 옆면에 둔다 — 앞 유리 얼굴은 기존 캐릭터와 닮아 피한다 (설계서 §2, §10) -->
+  <symbol id="art" viewBox="0 0 200 200">
+    <ellipse cx="100" cy="190" rx="78" ry="6" style="fill:var(--shadow)"/>
+    <!-- 지붕 표시등 -->
+    <rect x="76" y="40" width="44" height="16" rx="8" style="fill:var(--sky)"/>
+    <!-- 몸 -->
+    <rect x="18" y="50" width="164" height="114" rx="30" style="fill:var(--butter)"/>
+    <!-- 아래쪽 그늘 -->
+    <path d="M18 140 H182 V134 A30 30 0 0 1 152 164 H48 A30 30 0 0 1 18 134 Z" style="fill:var(--shadow)"/>
+    <!-- 창문 -->
+    <rect x="32" y="64" width="34" height="34" rx="10" style="fill:var(--sky)"/>
+    <rect x="74" y="64" width="34" height="34" rx="10" style="fill:var(--sky)"/>
+    <rect x="116" y="64" width="34" height="34" rx="10" style="fill:var(--sky)"/>
+    <path d="M158 64 H168 A10 10 0 0 1 178 74 V98 H158 Z" style="fill:var(--sky)"/>
+    <!-- 앞 전조등 -->
+    <circle cx="174" cy="136" r="6" style="fill:var(--surface);stroke:var(--muted);stroke-width:3"/>
+    <!-- 범퍼 -->
+    <rect x="12" y="152" width="176" height="10" rx="5" style="fill:var(--muted)"/>
+    <!-- 바퀴 -->
+    <circle cx="58" cy="164" r="21" style="fill:var(--ink)"/>
+    <circle cx="142" cy="164" r="21" style="fill:var(--ink)"/>
+    <circle cx="58" cy="164" r="8" style="fill:var(--muted)"/>
+    <circle cx="142" cy="164" r="8" style="fill:var(--muted)"/>
+    <!-- 얼굴 (옆면) -->
+    <ellipse cx="82" cy="117" rx="6.5" ry="8" style="fill:var(--ink)"/>
+    <ellipse cx="118" cy="117" rx="6.5" ry="8" style="fill:var(--ink)"/>
+    <circle cx="84.3" cy="113.5" r="2.4" style="fill:var(--surface)"/>
+    <circle cx="120.3" cy="113.5" r="2.4" style="fill:var(--surface)"/>
+    <ellipse cx="66" cy="132" rx="9" ry="5.5" style="fill:var(--apricot)"/>
+    <ellipse cx="134" cy="132" rx="9" ry="5.5" style="fill:var(--apricot)"/>
+    <path d="M90 130 Q100 141 110 130" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round"/>
+  </symbol>
+  <use href="#art"/>
+</svg>

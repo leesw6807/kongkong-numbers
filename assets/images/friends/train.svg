@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 뚜뚜: 기차 (오리지널). 얼굴은 옆면에 둔다 — 앞면 둥근 얼굴은 기존 캐릭터와 닮아 피한다 (설계서 §2, §10) -->
+  <symbol id="art" viewBox="0 0 200 200">
+    <ellipse cx="100" cy="190" rx="80" ry="6" style="fill:var(--shadow)"/>
+    <!-- 연기 -->
+    <circle cx="70" cy="36" r="11" style="fill:var(--surface);stroke:var(--muted);stroke-width:3"/>
+    <circle cx="90" cy="22" r="7.5" style="fill:var(--surface);stroke:var(--muted);stroke-width:3"/>
+    <!-- 굴뚝 -->
+    <rect x="46" y="62" width="22" height="40" rx="6" style="fill:var(--muted)"/>
+    <rect x="40" y="54" width="34" height="13" rx="6.5" style="fill:var(--muted)"/>
+    <!-- 운전칸 지붕·몸 -->
+    <rect x="114" y="46" width="74" height="14" rx="7" style="fill:var(--muted)"/>
+    <rect x="122" y="54" width="58" height="104" rx="14" style="fill:var(--lavender)"/>
+    <rect x="135" y="68" width="32" height="30" rx="9" style="fill:var(--sky)"/>
+    <!-- 보일러 (옆면, 얼굴이 있는 곳) -->
+    <rect x="24" y="92" width="118" height="66" rx="28" style="fill:var(--lavender)"/>
+    <!-- 아래 틀·앞 범퍼 -->
+    <rect x="20" y="148" width="164" height="11" rx="5.5" style="fill:var(--muted)"/>
+    <path d="M22 148 L8 166 H30 Z" style="fill:var(--muted);stroke:var(--muted);stroke-width:4;stroke-linejoin:round"/>
+    <!-- 바퀴 -->
+    <line x1="56" y1="166" x2="104" y2="166" style="stroke:var(--muted);stroke-width:5;stroke-linecap:round"/>
+    <circle cx="56" cy="166" r="16" style="fill:var(--ink)"/>
+    <circle cx="104" cy="166" r="16" style="fill:var(--ink)"/>
+    <circle cx="154" cy="164" r="19" style="fill:var(--ink)"/>
+    <circle cx="56" cy="166" r="6" style="fill:var(--muted)"/>
+    <circle cx="104" cy="166" r="6" style="fill:var(--muted)"/>
+    <circle cx="154" cy="164" r="7" style="fill:var(--muted)"/>
+    <!-- 얼굴 (옆면) -->
+    <ellipse cx="66" cy="118" rx="6.5" ry="8" style="fill:var(--ink)"/>
+    <ellipse cx="100" cy="118" rx="6.5" ry="8" style="fill:var(--ink)"/>
+    <circle cx="68.3" cy="114.5" r="2.4" style="fill:var(--surface)"/>
+    <circle cx="102.3" cy="114.5" r="2.4" style="fill:var(--surface)"/>
+    <ellipse cx="51" cy="133" rx="8.5" ry="5.5" style="fill:var(--apricot)"/>
+    <ellipse cx="115" cy="133" rx="8.5" ry="5.5" style="fill:var(--apricot)"/>
+    <path d="M74 131 Q83 141 92 131" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round"/>
+  </symbol>
+  <use href="#art"/>
+</svg>

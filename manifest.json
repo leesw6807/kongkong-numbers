@@ -1,0 +1,17 @@
+{
+  "name": "숫자 친구 콩콩이",
+  "short_name": "콩콩이",
+  "description": "만 3~4세 유아용 숫자 놀이",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#FAF6EE",
+  "theme_color": "#FAF6EE",
+  "icons": [
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
